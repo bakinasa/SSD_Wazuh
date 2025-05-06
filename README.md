@@ -337,5 +337,10 @@ This section demonstrates how to configure Wazuh to detect suspicious processes,
 
 ### 5.5 Settings that were also made
 
+**Juiceshop**
+
 ![8](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/8.png)
 
+**Dvwa**
+
+![9](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/9.png)
