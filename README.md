@@ -77,7 +77,7 @@ For security and access management, the entire infrastructure is divided into se
 ### 2.3 Network topology  
 The project includes setting up a virtual infrastructure, network segmentation using MikroTik and VMware, which allows isolating different subnets and services for enhanced security. Access to services is configured via secure channels, and VPN is also set up.
 
-![1](assets\1.png)
+![diagram](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/1.png)
 
 **Example of interaction:**
 - VPN connects to MikroTik and other VMs (via the Mgmt VLAN).
@@ -129,7 +129,7 @@ For secure connections between infrastructure components, VPN tunnels were confi
 - At least 4GB of RAM and 2 virtual CPUs.
 - 50GB of disk space for data storage.
 
-![2](assets\2.png)
+![2](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/2.png)
 
 **Installation:**
 - Update the system:
@@ -139,7 +139,7 @@ For secure connections between infrastructure components, VPN tunnels were confi
 
 * Install Wazuh by following the instructions in the [official Wazuh quickstart guide](https://documentation.wazuh.com/current/quickstart.html).
 
-![3](assets\3.png)
+![3](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/3.png)
 
 **Configuration:**
 
@@ -147,7 +147,7 @@ For secure connections between infrastructure components, VPN tunnels were confi
   `/var/ossec/etc/ossec.conf`.
   In this file, security rules, agent settings, file integrity monitoring, etc., can be configured.
 
-![4](assets\4.png)
+![4](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/4.png)
 
 ### 3.4 Installing and configuring agents
 
