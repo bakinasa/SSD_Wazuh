@@ -1,0 +1,12 @@
+services:
+  juice-shop:
+    image: bkimminich/juice-shop
+    restart: always
+    ports:
+      - "3000:3000"
+
+  dvwa:
+    image: vulnerables/web-dvwa
+    restart: always
+    ports:
+      - "8080:80"

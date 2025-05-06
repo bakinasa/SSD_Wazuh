@@ -47,13 +47,13 @@ The goal of the project is to create a secure virtual infrastructure using the W
 - Deploying a virtual infrastructure using VMware vSphere and configuring network segmentation through MikroTik.
 - Deploying Wazuh on a server for security event monitoring and configuring agents on workstations and servers (Windows and Linux).
 - Implementing several use cases for attack detection, such as:
-  - Detecting brute-force attacks.
-  - Detecting malware using YARA rules.
+  - Detecting suspicious processes using Sysmon.
+  - Detecting process creation and termination events.
 - Simulating attacks on vulnerable applications (Juice Shop), analyzing protection results, and adjusting security policies.
 
 ### 1.3 Description of the initial idea  
 At the start of the project, a basic virtual environment is in place, which will be used to deploy the components. The virtual infrastructure includes services with varying levels of security, including test vulnerable applications (e.g., Juice Shop), which will serve as targets for attacks.  
-Wazuh will be used for monitoring, with agents configured on servers and workstations. The system will be integrated with external threat sources for improved threat processing and analysis. During the implementation, attacks will be simulated using standard tools like Linux and Metasploit to test defenses and adjust rules accordingly.
+Wazuh will be used for monitoring, with agents configured on servers and workstations. The system will be integrated with external threat sources for improved threat processing and analysis. During the implementation, attacks will be simulated using standard tools like Linux to test defenses and adjust rules accordingly.
 
 ---
 
@@ -166,198 +166,151 @@ After setting up the Wazuh server, agents need to be installed on both Windows a
 2. Configure the agent.
 3. Start the agent service.
 
+![5](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/5.png)
+
 ### 3.5 Implementing Use Cases
-
 In this section, we will implement and configure at least three use cases as described in the Wazuh documentation. We will work on:
-- Detecting brute-force attacks.
-- Detecting malware using YARA.
+- Detecting suspicious processes using Sysmon.
+- Detecting process creation and termination events.
 
-### 3.5.1 Detecting Brute-Force Attacks
+### 3.5.1 Detecting Suspicious Processes
 
 **Objective:**  
-Configure Wazuh to detect brute-force attacks on SSH and RDP. This can be useful for protecting against unauthorized access attempts.
+Configure Wazuh to detect suspicious processes such as unauthorized or unusual processes (e.g., **lsass.exe**, **svchost.exe**, etc.).
 
-#### Installation and configuration of Wazuh rules for brute-force:
+#### Sysmon Rules Installation and Configuration:
 
-Wazuh has built-in rules to detect brute-force attacks on SSH and other services. To enable these rules:
+1. To monitor processes such as **lsass.exe** and others, rules have been added to the Wazuh configuration.
 
-1. Open the configuration file `/var/ossec/etc/ossec.conf` on the Wazuh server.
-2. Add or uncomment the following lines to enable the rules related to brute-force:
+   Example configuration for detecting suspicious processes:
+   ```xml
+   <group name="windows,sysmon,sysmon_process-anomalies,">
+      <rule id="61625" level="12">
+         <if_group>sysmon_event1</if_group>
+         <field name="win.eventdata.image">lsass.exe</field>
+         <description>Sysmon - Suspicious Process - lsass</description>
+         <mitre>
+            <id>T1055</id>
+         </mitre>
+         <group>pci_dss_10.6.1,pci_dss_11.4,gdpr_IV_35.7.d,</group>
+      </rule>
+
+      <rule id="61626" level="0">
+         <if_sid>61625</if_sid>
+         <field name="win.eventdata.parentImage">wininit.exe</field>
+         <description>Sysmon - Legitimate Parent Image - lsass.exe</description>
+      </rule>
+   </group>
+
+2. To ensure Sysmon logs are collected, the following configuration has been added to the Windows configuration:
 
    ```xml
-   <ruleset>
-       <include>/var/ossec/etc/rules/sshd_rules.xml</include>
-   </ruleset>  
-These rules are already configured to analyze logs for SSH and RDP (depending on the services used).
-
-#### Configuring filtering in Wazuh:
-
-To fine-tune detection, you can configure event filtering:
-
-* Enable logging for SSH and RDP in the corresponding files:
-
-  * **SSH:** `/var/log/auth.log` (for Linux)
-  * **Windows RDP:** Security event logs
+   <localfile>
+      <location>Microsoft-Windows-Sysmon/Operational</location>
+      <log_format>eventchannel</log_format>
+   </localfile>
+   ```
 
 #### Verification:
 
-Perform a brute-force attack using Hydra or Medusa on SSH:
-
-```bash
-hydra -l root -P /usr/share/wordlists/rockyou.txt ssh://<target-ip>
-```
-
-Wazuh should generate an alert if the number of failed login attempts exceeds the set threshold.
+To verify the rule, create a copy of **lsass.exe** (or another suspicious process) and check Wazuh logs. If the process is suspicious, Wazuh should generate an alert indicating the process and its parent (e.g., `wininit.exe`).
 
 ---
 
-### 3.5.2 Detecting Malware with YARA
+### 3.5.2 Detecting Process Creation and Termination Events
 
 **Objective:**
-Utilize Wazuh for scanning files for malware using YARA rules.
+Monitor process creation and termination events, such as the starting and stopping of critical system processes.
 
-#### Installation and Configuration of YARA:
+#### Sysmon Event Rules for Process Creation and Termination:
 
-To configure Wazuh for malware detection using YARA, follow these steps:
+1. Additional rules for monitoring process creation and termination have been added in the Wazuh configuration:
 
-**Step 1: Install YARA on Wazuh Server and Clients**
+   ```xml
+   <rule id="61603" level="5">
+      <if_sid>61600</if_sid>
+      <field name="win.system.eventID">^1$</field>
+      <description>Sysmon - Event 1: Process creation $(win.eventdata.description)</description>
+   </rule>
 
-```bash
-sudo apt install yara
-```
+   <rule id="61605" level="0">
+      <if_sid>61600</if_sid>
+      <field name="win.system.eventID">^5$</field>
+      <description>Sysmon - Event 5: Process terminated $(win.eventdata.image)</description>
+   </rule>
+   ```
 
-**Step 2: Configure YARA Rules in Wazuh**
+2. These rules help to track processes that are created or terminated and ensure that no unauthorized processes are running or exiting without notification.
 
-To create YARA rules for detecting known threats, follow these steps:
+#### Verification:
 
-* Download or create YARA rules to detect known threats. You can find rules from official YARA repositories or create your own.
-* Save the rules in the directory `/var/ossec/rules/yara/`.
+To verify this use case, simulate the creation and termination of a process and check the Wazuh alerts:
 
-**Step 3: Configure Wazuh to Use YARA Rules**
-
-In the Wazuh configuration file `/var/ossec/etc/ossec.conf`, enable YARA rules for file scanning by adding the following:
-
-```xml
-<yara>
-    <enabled>yes</enabled>
-    <path>/var/ossec/rules/yara/</path>
-</yara>
-```
-
-**Step 4: Verification**
-
-To verify that YARA rules are functioning correctly:
-
-* Create a file that contains a signature for malware (this could be a test file or a simulated virus).
-* Scan the file using Wazuh. It should generate an alert indicating that a threat has been detected.
-
-#### Example YARA Rule:
-
-Here is an example of a basic YARA rule that detects suspicious strings:
-
-```yara
-rule SuspiciousString
-{
-    meta:
-        description = "Detects suspicious string"
-        author = "Security Team"
-        version = "1.0"
-
-    strings:
-        $s1 = "This file is malicious"
-        $s2 = "cmd.exe /c"
-
-    condition:
-        $s1 or $s2
-}
-```
-
-This rule will detect files that contain the suspicious strings "This file is malicious" or "cmd.exe /c", helping to prevent malware downloads.
+* For a suspicious process like **csrss.exe**, Wazuh should trigger an alert.
+* Similarly, on process termination, Wazuh should log an event indicating the process was terminated.
 
 ---
 
 ## 4. Attack Modelling, Analysis and Improvements
 
-### 4.1 Attack testing
+### 4.1 Attack Testing
 
 **Description of conducted attacks:**
-We conducted several types of attacks to test Wazuh's response:
 
-* **Brute-force attack:**
+* **Detecting Suspicious Processes:**
 
-  * **Software used:** A custom brute-force script was used along with Metasploit modules to attempt access to a test server.
-  * **Results:** The attack attempted multiple password combinations in a short period.
-  * **Expected outcome:** Wazuh should detect multiple failed login attempts and generate an alert for a brute-force attack.
+  * A **process hacker** was used to simulate the launching of suspicious processes such as **lsass.exe**.
+  * Result: Wazuh detected the suspicious process and identified the parent process (`wininit.exe`).
 
-* **YARA detection:**
+  ![7](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/7.png)
 
-  * **Software used:** A test file containing a suspicious signature was created and scanned by Wazuh.
-  * **Results:** The file contained a string often associated with known malware.
-  * **Expected outcome:** Wazuh should generate an alert based on the configured YARA rules.
 
-**Software used for the attacks:**
+* **Detecting Process Creation and Termination Events:**
 
-* Metasploit (for brute-force attack)
-* Custom YARA rule (for malware detection)
-* Test file (for simulating malware behavior)
+  * The creation and termination of processes were simulated using **Sysmon**.
+  * Result: Wazuh detected the creation and termination events correctly.
 
-### 4.2 Wazuh system response
+**Software used for attacks:**
+
+* **Process Hacker** (for simulating process creation)
+* **Sysmon** (for event logging)
+* **Test files** (for process termination events)
+
+### 4.2 Wazuh System Response
 
 **Screenshots and logs of triggered alerts:**
 
-* **Brute-force attack alert:**
+* **Suspicious Process Alert:**
 
-  ```
-  ALERT - Brute-force attack detected:
-  Source IP: 192.168.1.100
-  Attempted user: admin
-  Number of failed attempts: 15
-  Alert level: High
-  Action: Connection blocked after threshold exceeded.
-  ```
-
-* **YARA rule detection alert:**
-
-  ```
-  ALERT - Suspicious file detected:
-  File path: /home/user/testfile.exe
-  Malware signature: This file is malicious
-  Alert level: Medium
-  Action: Alert generated, file quarantined.
-  ```
-
-**Description of Each Alert and Its Significance**
-
-#### Brute-force Attack Alert:
-This alert indicates that an excessive number of failed login attempts occurred in a short period, which suggests a brute-force attack. The system blocked the connection after the threshold was exceeded.
-
-#### Malware File Detection Alert:
-This alert signals that a file was detected with a signature matching known malicious programs. The file was flagged as suspicious, and appropriate actions were taken.
+![6](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/6.png)
 
 
-**Comparison of Wazuh Settings Before and After Attacks**
+**Description of Each Alert and Its Significance:**
 
-**Before the Attacks:**  
-Wazuh was configured with basic security policies to detect brute-force attacks and verify file integrity.
+* **Suspicious Process Alert:**
+  This alert indicates that an unauthorized or suspicious process was detected. Wazuh flagged the process and identified the legitimate parent process.
 
-**After the Attacks:**
-- The system successfully detected and responded to the brute-force attack by blocking the attacking IP address.
-- The YARA rules were triggered, detecting the suspicious file, which confirms the correct configuration of the system.
-
+---
 
 ### 4.3 Recommendations
 
 Based on the test results, the following recommendations are made:
 
-* **Brute-force attack:**
+* **Suspicious Process Detection:**
 
-  * Increase the threshold for failed login attempts to reduce false positives, but carefully consider the risk of successful brute-force attacks.
-  * Implement CAPTCHA after a certain number of failed attempts to prevent automated brute-force attacks.
+  * Regularly update the list of processes to track and ensure that new threats are detected.
+  * Consider adding more specific rules for new suspicious processes that may emerge.
 
-* **YARA rules:**
+* **Process Creation and Termination Events:**
 
-  * Regularly update and expand the YARA rule set to include new malware signatures.
-  * Optimize YARA rules to balance detection accuracy and system performance.
+  * Enable automatic actions based on alert levels (e.g., terminate processes with a high-level alert).
+  * Optimize the balance between alert accuracy and system performance.
+
+---
+
+### Conclusion
+
+This section demonstrates how to configure Wazuh to detect suspicious processes, such as **lsass.exe**, and monitor process creation and termination events using **Sysmon**. With these configurations in place, Wazuh can effectively monitor for unusual behavior in the system, providing enhanced security and monitoring capabilities.
 
 ---
 
@@ -372,12 +325,17 @@ Based on the test results, the following recommendations are made:
 
 ### 5.2 Configuration files
 
-Link to the repository with configuration files.
+[Link to the repository with configuration files.](https://github.com/bakinasa/SSD_Wazuh/tree/main)
 
 ### 5.3 Screenshots
 
-Link to the archive with screenshots of the system in action.
+[Link to the archive with screenshots of the system in action.](https://disk.yandex.ru/client/disk/SSD)
 
 ### 5.4 Video
 
-Link to the demo video of the system.
+[Link to the demo video of the system.](https://disk.yandex.ru/client/disk/SSD)
+
+### 5.5 Settings that were also made
+
+![8](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/8.png)
+
