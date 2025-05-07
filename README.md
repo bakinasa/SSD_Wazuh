@@ -282,11 +282,6 @@ This section demonstrates how to configure Wazuh to detect suspicious processes,
 
 ### 5.1 Team
 
-* **Alexander Tomashov** - Infrastructure and architecture design
-* **Andrey Boronin** - Deployment and configuration of components
-* **Ivan Sannikov** - Monitoring, security, and integration setup
-* **Bakina Sofia** - Testing, attack modelling, analysis, reporting, and presentation preparation
-
 ### 5.2 Configuration files
 
 [Link to the repository with configuration files.](https://github.com/bakinasa/SSD_Wazuh/tree/main)
