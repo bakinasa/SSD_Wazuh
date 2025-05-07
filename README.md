@@ -24,10 +24,7 @@
    - 3.3 [Deploying the Wazuh server](#33-deploying-the-wazuh-server)
    - 3.4 [Installing and configuring agents](#34-installing-and-configuring-agents)
    - 3.5 [Implementing Use Cases](#35-implementing-use-cases)
-4. [Attack Modelling, Analysis and Improvements](#4-attack-modelling-analysis-and-improvements)
-   - 4.1 [Attack testing](#41-attack-testing)
-   - 4.2 [Wazuh system response](#42-wazuh-system-response)
-   - 4.3 [Recommendations](#43-recommendations)
+4. [Analysis and Improvements](#4-attack-modelling-analysis-and-improvements)
 5. [Applications](#5-applications)
    - 5.1 [Team](#51-team)
    - 5.2 [Configuration files](#52-configuration-files)
@@ -260,45 +257,7 @@ To verify this use case, simulate the creation and termination of a process and 
 
 ---
 
-## 4. Attack Modelling, Analysis and Improvements
-
-### 4.1 Attack Testing
-
-**Description of conducted attacks:**
-
-* **Detecting Suspicious Processes:**
-
-  * A **process hacker** was used to simulate the launching of suspicious processes such as **lsass.exe**.
-  * Result: Wazuh detected the suspicious process and identified the parent process (`wininit.exe`).
-
-* **Detecting Process Creation and Termination Events:**
-
-  * The creation and termination of processes were simulated using **Sysmon**.
-  * Result: Wazuh detected the creation and termination events correctly.
-
-**Software used for attacks:**
-
-* **Process Hacker** (for simulating process creation)
-* **Sysmon** (for event logging)
-* **Test files** (for process termination events)
-
-### 4.2 Wazuh System Response
-
-**Screenshots of triggered alerts:**
-
-* **Suspicious Process Alert:**
-
-![6](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/6.png)
-
-**Description of Alert:**
-
-* **Suspicious Process Alert:**
-  This alert indicates that an unauthorized or suspicious process was detected. Wazuh flagged the process and identified the legitimate parent process.
-
----
-
-### 4.3 Recommendations
-
+## 4. Analysis and Improvements
 Based on the test results, the following recommendations are made:
 
 * **Suspicious Process Detection:**
