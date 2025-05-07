@@ -213,33 +213,36 @@ Configure Wazuh to detect suspicious processes such as unauthorized or unusual p
    </localfile>
    ```
 
-#### Verification:
-
-To verify the rule, create a copy of **lsass.exe** (or another suspicious process) and check Wazuh logs. If the process is suspicious, Wazuh should generate an alert indicating the process and its parent (e.g., `wininit.exe`).
 
 ---
 
-### 3.5.2 Detecting Process Creation and Termination Events
+### 3.5.2 Detecting Process Creation
 
 **Objective:**
 Monitor process creation and termination events, such as the starting and stopping of critical system processes.
 
-#### Sysmon Event Rules for Process Creation and Termination:
+#### Sysmon Event Rules for Process Creation:
 
-1. Additional rules for monitoring process creation and termination have been added in the Wazuh configuration:
+1. Additional rules for monitoring process creation:
 
    ```xml
-   <rule id="61603" level="5">
-      <if_sid>61600</if_sid>
-      <field name="win.system.eventID">^1$</field>
-      <description>Sysmon - Event 1: Process creation $(win.eventdata.description)</description>
-   </rule>
+   <group name="windows,sysmon,sysmon_process-anomalies,">
+      <rule id="61625" level="12">
+         <if_group>sysmon_event1</if_group>
+         <field name="win.eventdata.image">lsass.exe</field>
+         <description>Sysmon - Suspicious Process - lsass</description>
+         <mitre>
+            <id>T1055</id>
+         </mitre>
+         <group>pci_dss_10.6.1,pci_dss_11.4,gdpr_IV_35.7.d,</group>
+      </rule>
 
-   <rule id="61605" level="0">
-      <if_sid>61600</if_sid>
-      <field name="win.system.eventID">^5$</field>
-      <description>Sysmon - Event 5: Process terminated $(win.eventdata.image)</description>
-   </rule>
+      <rule id="61626" level="0">
+         <if_sid>61625</if_sid>
+         <field name="win.eventdata.parentImage">wininit.exe</field>
+         <description>Sysmon - Legitimate Parent Image - lsass.exe</description>
+      </rule>
+   </group>
    ```
 
 2. These rules help to track processes that are created or terminated and ensure that no unauthorized processes are running or exiting without notification.
@@ -248,8 +251,12 @@ Monitor process creation and termination events, such as the starting and stoppi
 
 To verify this use case, simulate the creation and termination of a process and check the Wazuh alerts:
 
-* For a suspicious process like **csrss.exe**, Wazuh should trigger an alert.
+* For a suspicious process like **lsass.exe**, Wazuh should trigger an alert.
 * Similarly, on process termination, Wazuh should log an event indicating the process was terminated.
+
+  ![6](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/6.png)
+
+  ![7](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/7.png)
 
 ---
 
@@ -264,9 +271,6 @@ To verify this use case, simulate the creation and termination of a process and 
   * A **process hacker** was used to simulate the launching of suspicious processes such as **lsass.exe**.
   * Result: Wazuh detected the suspicious process and identified the parent process (`wininit.exe`).
 
-  ![7](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/7.png)
-
-
 * **Detecting Process Creation and Termination Events:**
 
   * The creation and termination of processes were simulated using **Sysmon**.
@@ -280,14 +284,13 @@ To verify this use case, simulate the creation and termination of a process and 
 
 ### 4.2 Wazuh System Response
 
-**Screenshots and logs of triggered alerts:**
+**Screenshots of triggered alerts:**
 
 * **Suspicious Process Alert:**
 
 ![6](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/6.png)
 
-
-**Description of Each Alert and Its Significance:**
+**Description of Alert:**
 
 * **Suspicious Process Alert:**
   This alert indicates that an unauthorized or suspicious process was detected. Wazuh flagged the process and identified the legitimate parent process.
