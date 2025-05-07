@@ -114,12 +114,20 @@ This chapter will describe the process of installing and configuring basic compo
 - Access to the Management subnet is provided only via VPN, isolating it from other network segments. Other devices cannot access the Management network without VPN.
 - Routing was configured to direct traffic through correct paths, and firewall rules ensure necessary security and isolation between segments.
 
+  ![dmz](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/dmz.png)
+
+  ![lan](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/lan.png)
+
+  ![mgmt](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/mgmt.png)
+
 ### 3.2 Setting up secure tunnels  
 For secure connections between infrastructure components, VPN tunnels were configured using IPsec and OpenVPN.  
 **What was done:**
 - VPN via IPsec was set up for secure connections between subnets and infrastructure components.
 - OpenVPN was also configured as an additional VPN connection system, ensuring secure data transfer.
 - MikroTik was set up to work with VPN to ensure segmentation and secure interaction between clients and services, including the Management subnet.
+
+  ![mikrotik](https://github.com/bakinasa/SSD_Wazuh/raw/main/assets/mikrotik.png)
 
 ### 3.3 Deploying the Wazuh  
 **Preparation:**
